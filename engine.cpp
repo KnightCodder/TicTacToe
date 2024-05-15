@@ -1,16 +1,15 @@
 #include <iostream>
+#include <chrono>
 
 const int cross = 1;
 const int circle = -1;
 const int empty = 0;
 const int still_going = 6;
 
-int max(int a, int b)
-{
-    if (a < b)
-        return b;
-    return a;
-}
+int initialPosition[] = {0, 0, 0,
+                         0, 0, 0,
+                         0, 0, 0};
+
 int evaluate(int a[9])
 {
     if ((a[0] == cross && a[1] == cross && a[2] == cross) || (a[3] == cross && a[4] == cross && a[5] == cross) || (a[6] == cross && a[7] == cross && a[8] == cross) || (a[0] == cross && a[3] == cross && a[6] == cross) || (a[1] == cross && a[4] == cross && a[7] == cross) || (a[2] == cross && a[5] == cross && a[8] == cross) || (a[0] == cross && a[4] == cross && a[8] == cross) || (a[6] == cross && a[4] == cross && a[2] == cross))
@@ -22,6 +21,7 @@ int evaluate(int a[9])
     else
         return still_going;
 }
+
 int negamax(int position[9], int alpha, int beta, int turn)
 {
     int result = evaluate(position);
@@ -37,8 +37,8 @@ int negamax(int position[9], int alpha, int beta, int turn)
             std::copy(position, position + 9, new_position);
             new_position[i] = turn;
             int score = -negamax(new_position, -beta, -alpha, -turn);
-            best_score = max(best_score, score);
-            alpha = max(alpha, score);
+            best_score = std::max(best_score, score);
+            alpha = std::max(alpha, score);
             if (alpha >= beta)
                 break;
         }
@@ -122,7 +122,8 @@ void play()
         if (gameStatus != still_going)
         {
             printBoard(x);
-            std::cout << "\n-------------------------------\n\nGame Over : " << gameStatus << "\n\n-------------------------------\n" << std::endl;
+            std::cout << "\n-------------------------------\n\nGame Over : " << gameStatus << "\n\n-------------------------------\n"
+                      << std::endl;
 
             std::cin >> cache;
 
@@ -151,7 +152,15 @@ void play()
 
 int main()
 {
-    play();
+    // play();
+    auto start = std::chrono::high_resolution_clock::now();
+
+    bestMove(initialPosition, 1);
+
+    auto end = std::chrono::high_resolution_clock::now();
+
+    auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
+    std::cout << "Execution time: " << duration.count() << " nanoseconds" << std::endl;
 
     return 0;
 }
