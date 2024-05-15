@@ -1,5 +1,6 @@
 #include <iostream>
 #include <chrono>
+#include <map>
 
 namespace result
 {
@@ -84,14 +85,37 @@ struct Board
             std::cout << "\n-------------\n";
         }
     }
+
+    bool operator< (const Board &other) const
+    {
+        return (X < other.X || (X == other.X && O < other.O));
+    }
+
+    bool operator== (const Board &other) const
+    {
+        return X == other.X;
+    }
+
+
 };
+
+std::map<Board, int> transpositionTable;
 
 int negamax(Board position, int alpha, int beta, int turn)
 {
+    if (transpositionTable.find(position) != transpositionTable.end())
+    {
+        return transpositionTable[position];
+    }
+
     int result = position.evaluate();
+
     if (result != result::still_going)
-        return (result == result::cross) ? turn : (result == result::circle) ? -turn
-                                                                             : 0;
+    {
+        result = (result == result::cross) ? turn : (result == result::circle) ? -turn : 0;
+        transpositionTable[position] = result;
+        return result;
+    }
     int best_score = -1;
     for (int i = 0; i < 9; i++)
     {
@@ -107,6 +131,8 @@ int negamax(Board position, int alpha, int beta, int turn)
                 break;
         }
     }
+
+    transpositionTable[position] = best_score;
     return best_score;
 }
 void analysisPrinter(Board position, int turn)
@@ -195,17 +221,17 @@ void play()
 
 int main()
 {
-    play();
+    // play();
 
-    // Board a;
-    // auto start = std::chrono::high_resolution_clock::now();
+    Board a;
+    auto start = std::chrono::high_resolution_clock::now();
 
-    // bestMove(a, 1);
+    bestMove(a, 1);
 
-    // auto end = std::chrono::high_resolution_clock::now();
+    auto end = std::chrono::high_resolution_clock::now();
 
-    // auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
-    // std::cout << "Execution time: " << duration.count() << " nanoseconds" << std::endl;
+    auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
+    std::cout << "Execution time: " << duration.count() << " nanoseconds" << std::endl;
 
     return 0;
 }
