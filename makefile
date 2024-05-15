@@ -2,7 +2,7 @@
 CXX = g++
 
 # Compilation flags
-CXXFLAGS = -Iinclude -Iheader -Wall -Wextra -g -O0
+CXXFLAGS = -O0
 
 # Main target
 all: engine.o

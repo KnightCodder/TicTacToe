@@ -1,42 +1,106 @@
 #include <iostream>
 #include <chrono>
 
-const int cross = 1;
-const int circle = -1;
-const int empty = 0;
-const int still_going = 6;
-
-int initialPosition[] = {0, 0, 0,
-                         0, 0, 0,
-                         0, 0, 0};
-
-int evaluate(int a[9])
+namespace result
 {
-    if ((a[0] == cross && a[1] == cross && a[2] == cross) || (a[3] == cross && a[4] == cross && a[5] == cross) || (a[6] == cross && a[7] == cross && a[8] == cross) || (a[0] == cross && a[3] == cross && a[6] == cross) || (a[1] == cross && a[4] == cross && a[7] == cross) || (a[2] == cross && a[5] == cross && a[8] == cross) || (a[0] == cross && a[4] == cross && a[8] == cross) || (a[6] == cross && a[4] == cross && a[2] == cross))
-        return cross;
-    else if ((a[0] == circle && a[1] == circle && a[2] == circle) || (a[3] == circle && a[4] == circle && a[5] == circle) || (a[6] == circle && a[7] == circle && a[8] == circle) || (a[0] == circle && a[3] == circle && a[6] == circle) || (a[1] == circle && a[4] == circle && a[7] == circle) || (a[2] == circle && a[5] == circle && a[8] == circle) || (a[0] == circle && a[4] == circle && a[8] == circle) || (a[6] == circle && a[4] == circle && a[2] == circle))
-        return circle;
-    else if (a[0] != empty && a[1] != empty && a[2] != empty && a[3] != empty && a[4] != empty && a[5] != empty && a[6] != empty && a[7] != empty && a[8] != empty)
-        return empty;
-    else
-        return still_going;
+    const int cross = 1;
+    const int circle = -1;
+    const int draw = 0;
+    const int still_going = 6;
 }
 
-int negamax(int position[9], int alpha, int beta, int turn)
+namespace turn
 {
-    int result = evaluate(position);
-    if (result != still_going)
-        return (result == cross) ? turn : (result == circle) ? -turn
-                                                             : 0;
+    const int cross = 1;
+    const int circle = -1;
+}
+
+namespace bitboard
+{
+    const int empty = 0;
+    const int fill = 511;
+    const int over[] = {7, 56, 448, 273, 84, 292, 146, 73};
+}
+
+struct Board
+{
+    int X = bitboard::empty;
+    int O = bitboard::empty;
+
+    int evaluate()
+    {
+        if ((X & 7) == 7 || (X & 56) == 56 || (X & 448) == 448 || (X & 273) == 273 || (X & 84) == 84 || (X & 292) == 292 || (X & 146) == 146 || (X & 73) == 73)
+            return result::cross;
+        else if ((O & 7) == 7 || (O & 56) == 56 || (O & 448) == 448 || (O & 273) == 273 || (O & 84) == 84 || (O & 292) == 292 || (O & 146) == 146 || (O & 73) == 73)
+            return result::circle;
+        else if ((X | O) == bitboard::fill)
+            return result::draw;
+        else
+            return result::still_going;
+    }
+
+    bool isEmpty(int bit_position)
+    {
+        int mask = 1 << bit_position;
+
+        return !((X | O) & mask);
+    }
+
+    void playMove(int index, int turn)
+    {
+        int mask = 1 << index;
+
+        if (turn == turn::cross)
+            X = X | mask;
+        else
+            O = O | mask;
+    }
+
+    void undoMove(int index)
+    {
+        int mask = ~(1 << index);
+
+        X = X & mask;
+        O = O & mask;
+    }
+
+    void print()
+    {
+        std::cout << "\n-------------\n";
+        for (int i = 0; i < 3; i++)
+        {
+            std::cout << "|";
+            for (int j = 0; j < 3; j++)
+            {
+                int mask = 1 << (i * 3 + j);
+
+                if (X & mask)
+                    std::cout << " X |";
+                else if (O & mask)
+                    std::cout << " O |";
+                else
+                    std::cout << " * |";
+            }
+            std::cout << "\n-------------\n";
+        }
+    }
+};
+
+int negamax(Board position, int alpha, int beta, int turn)
+{
+    int result = position.evaluate();
+    if (result != result::still_going)
+        return (result == result::cross) ? turn : (result == result::circle) ? -turn
+                                                                             : 0;
     int best_score = -1;
     for (int i = 0; i < 9; i++)
     {
-        if (position[i] == empty)
+        if (position.isEmpty(i))
         {
-            int new_position[9];
-            std::copy(position, position + 9, new_position);
-            new_position[i] = turn;
-            int score = -negamax(new_position, -beta, -alpha, -turn);
+            position.playMove(i, turn);
+            int score = -negamax(position, -beta, -alpha, -turn);
+            position.undoMove(i);
+
             best_score = std::max(best_score, score);
             alpha = std::max(alpha, score);
             if (alpha >= beta)
@@ -45,50 +109,31 @@ int negamax(int position[9], int alpha, int beta, int turn)
     }
     return best_score;
 }
-void analysisPrinter(int position[9], int turn)
+void analysisPrinter(Board position, int turn)
 {
     for (int i = 0; i < 9; i++)
     {
-        if (position[i] == 0)
+        if (position.isEmpty(i))
         {
-            int new_position[9];
-            std::copy(position, position + 9, new_position);
-            new_position[i] = turn;
-            std::cout << i << "\t" << -negamax(new_position, -1, 1, -turn) << "\n";
+            position.playMove(i, turn);
+            std::cout << i << "\t" << -negamax(position, -1, 1, -turn) << "\n";
+            position.undoMove(i);
         }
     }
 }
-void printBoard(int a[9])
-{
-    std::cout << "\n-------------\n";
-    for (int i = 0; i < 3; i++)
-    {
-        std::cout << "|";
-        for (int j = 0; j < 3; j++)
-        {
-            if (a[i * 3 + j] == cross)
-                std::cout << " X |";
-            if (a[i * 3 + j] == circle)
-                std::cout << " O |";
-            if (a[i * 3 + j] == empty)
-                std::cout << " * |";
-        }
-        std::cout << "\n-------------\n";
-    }
-}
-int bestMove(int position[9], int turn)
+int bestMove(Board position, int turn)
 {
     int move;
     int s = -1;
 
     for (int i = 0; i < 9; i++)
     {
-        if (position[i] == 0)
+        if (position.isEmpty(i))
         {
-            int new_position[9];
-            std::copy(position, position + 9, new_position);
-            new_position[i] = turn;
-            int eval = -negamax(new_position, -1, 1, -turn);
+            position.playMove(i, turn);
+            int eval = -negamax(position, -1, 1, -turn);
+            position.undoMove(i);
+
             if (eval >= s)
             {
                 move = i;
@@ -101,27 +146,25 @@ int bestMove(int position[9], int turn)
 }
 void play()
 {
-    int x[] = {0, 0, 0,
-               0, 0, 0,
-               0, 0, 0};
+    Board gameBoard;
 
     std::string cache;
 
-    int turn = cross;
+    int turn = turn::cross;
     std::cout << "enter turn (X/O) : ";
     std::cin >> cache;
     if (cache == "O" || cache == "o" || cache == "circle")
-        turn = circle;
+        turn = turn::circle;
 
-    int currentTurn = cross;
+    int currentTurn = turn::cross;
 
     while (true)
     {
-        int gameStatus = evaluate(x);
+        int gameStatus = gameBoard.evaluate();
 
-        if (gameStatus != still_going)
+        if (gameStatus != result::still_going)
         {
-            printBoard(x);
+            gameBoard.print();
             std::cout << "\n-------------------------------\n\nGame Over : " << gameStatus << "\n\n-------------------------------\n"
                       << std::endl;
 
@@ -130,7 +173,7 @@ void play()
             break;
         }
 
-        printBoard(x);
+        gameBoard.print();
 
         if (turn == currentTurn)
         {
@@ -138,12 +181,12 @@ void play()
             std::cout << "enter a move (the coordinates are number between [0,8]) : ";
             std::cin >> move;
 
-            x[move] = turn;
+            gameBoard.playMove(move, currentTurn);
         }
         else
         {
-            int move = bestMove(x, currentTurn);
-            x[move] = currentTurn;
+            int move = bestMove(gameBoard, currentTurn);
+            gameBoard.playMove(move, currentTurn);
         }
 
         currentTurn *= -1;
@@ -152,15 +195,17 @@ void play()
 
 int main()
 {
-    // play();
-    auto start = std::chrono::high_resolution_clock::now();
+    play();
 
-    bestMove(initialPosition, 1);
+    // Board a;
+    // auto start = std::chrono::high_resolution_clock::now();
 
-    auto end = std::chrono::high_resolution_clock::now();
+    // bestMove(a, 1);
 
-    auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
-    std::cout << "Execution time: " << duration.count() << " nanoseconds" << std::endl;
+    // auto end = std::chrono::high_resolution_clock::now();
+
+    // auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
+    // std::cout << "Execution time: " << duration.count() << " nanoseconds" << std::endl;
 
     return 0;
 }
