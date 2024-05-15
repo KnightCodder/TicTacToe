@@ -1,9 +1,9 @@
 #include <iostream>
 
-constexpr int cross = 1;
-constexpr int circle = -1;
-constexpr int empty = 0;
-constexpr int still_going = 6;
+const int cross = 1;
+const int circle = -1;
+const int empty = 0;
+const int still_going = 6;
 
 int max(int a, int b)
 {
@@ -66,11 +66,11 @@ void printBoard(int a[9])
         std::cout << "|";
         for (int j = 0; j < 3; j++)
         {
-            if (a[i*3 + j] == cross)
+            if (a[i * 3 + j] == cross)
                 std::cout << " X |";
-            if (a[i*3 + j] == circle)
+            if (a[i * 3 + j] == circle)
                 std::cout << " O |";
-            if (a[i*3 + j] == empty)
+            if (a[i * 3 + j] == empty)
                 std::cout << " * |";
         }
         std::cout << "\n-------------\n";
@@ -99,8 +99,7 @@ int bestMove(int position[9], int turn)
 
     return move;
 }
-
-int main()
+void play()
 {
     int x[] = {0, 0, 0,
                0, 0, 0,
@@ -113,10 +112,23 @@ int main()
     std::cin >> cache;
     if (cache == "O" || cache == "o" || cache == "circle")
         turn = circle;
-    
+
     int currentTurn = cross;
-    for (int i = 0; i < 9; i++)
+
+    while (true)
     {
+        int gameStatus = evaluate(x);
+
+        if (gameStatus != still_going)
+        {
+            printBoard(x);
+            std::cout << "\n-------------------------------\n\nGame Over : " << gameStatus << "\n\n-------------------------------\n" << std::endl;
+
+            std::cin >> cache;
+
+            break;
+        }
+
         printBoard(x);
 
         if (turn == currentTurn)
@@ -135,7 +147,11 @@ int main()
 
         currentTurn *= -1;
     }
-    printBoard(x);
+}
+
+int main()
+{
+    play();
 
     return 0;
 }
