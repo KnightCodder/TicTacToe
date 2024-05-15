@@ -215,12 +215,17 @@ void play()
 
 int main()
 {
+    bestMove(Board(), 1); // precompiling transposition table
+
+    
     play();
     // Board a;
     // auto start = std::chrono::high_resolution_clock::now();
-    // bestMove(a, 1);
+    // for(int i = 0; i < 10000; i++)
+    //     bestMove(a, 1);
     // auto end = std::chrono::high_resolution_clock::now();
     // auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
     // std::cout << "Execution time: " << duration.count() << " nanoseconds" << std::endl;
+
     return 0;
 }
