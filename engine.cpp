@@ -1,6 +1,7 @@
 #include <iostream>
 #include <chrono>
-#include <map>
+#include <unordered_map>
+#include <functional>
 
 namespace result
 {
@@ -43,14 +44,12 @@ struct Board
     bool isEmpty(int bit_position)
     {
         int mask = 1 << bit_position;
-
         return !((X | O) & mask);
     }
 
     void playMove(int index, int turn)
     {
         int mask = 1 << index;
-
         if (turn == turn::cross)
             X = X | mask;
         else
@@ -60,7 +59,6 @@ struct Board
     void undoMove(int index)
     {
         int mask = ~(1 << index);
-
         X = X & mask;
         O = O & mask;
     }
@@ -74,7 +72,6 @@ struct Board
             for (int j = 0; j < 3; j++)
             {
                 int mask = 1 << (i * 3 + j);
-
                 if (X & mask)
                     std::cout << " X |";
                 else if (O & mask)
@@ -86,36 +83,39 @@ struct Board
         }
     }
 
-    bool operator< (const Board &other) const
+    bool operator==(const Board &other) const
     {
-        return (X < other.X || (X == other.X && O < other.O));
+        return X == other.X && O == other.O;
     }
-
-    bool operator== (const Board &other) const
-    {
-        return X == other.X;
-    }
-
-
 };
 
-std::map<Board, int> transpositionTable;
+namespace std
+{
+    template<>
+    struct hash<Board>
+    {
+        std::size_t operator()(const Board& b) const
+        {
+            return hash<int>()(b.X) ^ (hash<int>()(b.O) << 1);
+        }
+    };
+}
+
+std::unordered_map<Board, int> transpositionTable;
 
 int negamax(Board position, int alpha, int beta, int turn)
 {
     if (transpositionTable.find(position) != transpositionTable.end())
-    {
         return transpositionTable[position];
-    }
 
     int result = position.evaluate();
-
     if (result != result::still_going)
     {
         result = (result == result::cross) ? turn : (result == result::circle) ? -turn : 0;
         transpositionTable[position] = result;
         return result;
     }
+
     int best_score = -1;
     for (int i = 0; i < 9; i++)
     {
@@ -124,7 +124,6 @@ int negamax(Board position, int alpha, int beta, int turn)
             position.playMove(i, turn);
             int score = -negamax(position, -beta, -alpha, -turn);
             position.undoMove(i);
-
             best_score = std::max(best_score, score);
             alpha = std::max(alpha, score);
             if (alpha >= beta)
@@ -135,6 +134,7 @@ int negamax(Board position, int alpha, int beta, int turn)
     transpositionTable[position] = best_score;
     return best_score;
 }
+
 void analysisPrinter(Board position, int turn)
 {
     for (int i = 0; i < 9; i++)
@@ -147,6 +147,7 @@ void analysisPrinter(Board position, int turn)
         }
     }
 }
+
 int bestMove(Board position, int turn)
 {
     int move;
@@ -159,7 +160,6 @@ int bestMove(Board position, int turn)
             position.playMove(i, turn);
             int eval = -negamax(position, -1, 1, -turn);
             position.undoMove(i);
-
             if (eval >= s)
             {
                 move = i;
@@ -170,43 +170,37 @@ int bestMove(Board position, int turn)
 
     return move;
 }
+
 void play()
 {
     Board gameBoard;
-
     std::string cache;
-
     int turn = turn::cross;
+
     std::cout << "enter turn (X/O) : ";
     std::cin >> cache;
     if (cache == "O" || cache == "o" || cache == "circle")
         turn = turn::circle;
 
     int currentTurn = turn::cross;
-
     while (true)
     {
         int gameStatus = gameBoard.evaluate();
-
         if (gameStatus != result::still_going)
         {
             gameBoard.print();
             std::cout << "\n-------------------------------\n\nGame Over : " << gameStatus << "\n\n-------------------------------\n"
                       << std::endl;
-
             std::cin >> cache;
-
             break;
         }
 
         gameBoard.print();
-
         if (turn == currentTurn)
         {
             int move;
             std::cout << "enter a move (the coordinates are number between [0,8]) : ";
             std::cin >> move;
-
             gameBoard.playMove(move, currentTurn);
         }
         else
@@ -221,17 +215,12 @@ void play()
 
 int main()
 {
-    // play();
-
-    Board a;
-    auto start = std::chrono::high_resolution_clock::now();
-
-    bestMove(a, 1);
-
-    auto end = std::chrono::high_resolution_clock::now();
-
-    auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
-    std::cout << "Execution time: " << duration.count() << " nanoseconds" << std::endl;
-
+    play();
+    // Board a;
+    // auto start = std::chrono::high_resolution_clock::now();
+    // bestMove(a, 1);
+    // auto end = std::chrono::high_resolution_clock::now();
+    // auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
+    // std::cout << "Execution time: " << duration.count() << " nanoseconds" << std::endl;
     return 0;
 }
